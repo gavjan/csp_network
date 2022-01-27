@@ -1,0 +1,40 @@
+(define (pop-last lst)
+    (if (null? (cdr lst))
+        '()
+        (cons
+            (car lst)
+            (pop-last (cdr lst))
+        )
+    )
+)
+(define (get-last list) 
+    (if (zero? (length (cdr list))) 
+        (car list) 
+        (get-last (cdr list))
+    )
+)
+(define (make-queue)
+    (define q '())
+    (define (empty?)
+        (equal? q '())
+    )
+
+    (define (add item)
+        (set! q (cons item q))
+    )
+
+    (define (pop)
+        (define ret (get-last q))
+        (set! q (pop-last q))
+        ret
+    )
+    (define* (func call #:optional arg)
+        (cond
+            ((equal? call 'add) (add arg))
+            ((equal? call 'pop) (pop))
+            ((equal? call 'empty?) (empty?))
+        )
+    )
+    func
+)
+
