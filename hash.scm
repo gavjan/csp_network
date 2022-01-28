@@ -27,6 +27,9 @@
     (define (get key)
         (hashx-ref my-hash my-assoc mp key)
     )
+    (define (map-func func)
+        (hash-map->list func mp)
+    )
     
     (define (in? key)
         (not (equal? #f (hashx-ref my-hash my-assoc mp key)))
@@ -35,9 +38,10 @@
     (define* (func call key #:optional val)
         (cond
             ((equal? call 'put) (put key val))
-            ((equal? call 'del) (del key    ))
-            ((equal? call 'get) (get key    ))
-            ((equal? call 'in?) (in? key    ))
+            ((equal? call 'del) (del key))
+            ((equal? call 'get) (get key))
+            ((equal? call 'in?) (in? key))
+            ((equal? call 'map) (map-func key))
         )
     )
     func
