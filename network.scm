@@ -32,10 +32,11 @@
             (or
                 (equal? comp >)
                 (equal? comp <)
-                (equal? comp =)
+                (equal? comp ==)
                 (equal? comp !=)
             )
             (constraints 'put name (make-constraint name comp left right))
+            (error name "unrecognized comperator for constraint" comp)
         )
     )
 
@@ -95,11 +96,93 @@
             #f
         )
     )
+    (define (eval-expr name comp left right)
+        (if
+            (or
+                (equal? comp >)
+                (equal? comp <)
+                (equal? comp ==)
+                (equal? comp !=)
+            )
+            (comp left right)
+            (error name "unrecognized comperator for constraint" comp)
+        )
+
+    )
+    (define (evaluate c)
+        (define name (constraint-name c))
+        (define comp (constraint-comp c))
+        (define left (constraint-left c))
+        (define right (constraint-right c))
+
+        (if (cells 'in? left)
+            (set! left (cell-curr (cells 'get left)))
+        )
+        (if (cells 'in? right)
+            (set! right (cell-curr (cells 'get right)))
+        )
+        (if 
+            (or
+                (equal? left '())
+                (equal? right '())
+            )
+            #t
+            (eval-expr name comp left right)
+        )
+    )
+
+    (define (assert-for-constraints l)   
+        (if  (equal? l '())
+            #t
+            (if (evaluate (car l))
+                (assert-for-constraints (cdr l))
+                #f
+            )
+        )
+    )
+
+   
+    (define (assert-constrains)
+        (assert-for-constraints
+            (constraints 'map
+                (lambda (name c) c)
+            )
+        )
+
+    )
+    (define (run-for-vals name l)
+        (if (not (equal? l '()))
+            (begin
+                (set-cell-val! name (car l))
+                (if (assert-constrains)
+                    (run)
+                )
+                (run-for-vals name (cdr l))
+                (set-cell-val! name '())
+            )
+        )
+    )
+
+    (define (run-for-cells l)
+        (if (not (equal? l '()))
+            (let ()
+                (define name (car (car l)))
+                (define c (cdr (car l)))
+                (if (equal? (cell-curr c) '())
+                    (run-for-vals name (cell-vals c))
+                )
+                (run-for-cells (cdr l))
+                
+            )
+        )
+    )
     (define (run)
         (if (not (check-over?))
-            (if not (solution?)
-                (begin
-                    #f ;; TODO
+            (if (not (solution?))
+                (run-for-cells
+                    (cells 'map
+                        (lambda (name c) (cons name c))
+                    )
                 )
             )
 
@@ -130,9 +213,36 @@
 )
 
 (define marx (create-network))
-(marx 'build-cell "A" (list 1 2 3))
-(marx 'build-cell "B" (list 1 2 3))
-(marx 'set-cell-val! "A" 1)
-(marx 'set-cell-val! "B" 2)
-(display (marx 'run-csp )) (newline)
+(marx 'build-cell "pianista"    (list "grucho" "harpo" "chico"))
+(marx 'build-cell "harfiarz"    (list "grucho" "harpo" "chico"))
+(marx 'build-cell "gadula"      (list "grucho" "harpo" "chico"))
+(marx 'build-cell "pieniadze"   (list "grucho" "harpo" "chico"))
+(marx 'build-cell "hazard"      (list "grucho" "harpo" "chico"))
+(marx 'build-cell "zwierzeta"   (list "grucho" "harpo" "chico"))
 
+;; 1) Pianista, harfiarz i gadula to różne osoby.
+(marx 'build-constraint "pianista/harfiarz" != "pianista" "harfiarz")
+(marx 'build-constraint "harfiarz/gadula" != "harfiarz" "gadula")
+(marx 'build-constraint "pianista/gadula" != "pianista" "gadula")
+
+;; 2) Ten kto lubi pieniądze nie jest tym, kto lubi hazard, a ten z kolei nie lubi zwierząt
+(marx 'build-constraint "pieniadze/hazard" != "pieniadze" "hazard")
+(marx 'build-constraint "hazard/zwierzeta" != "hazard" "zwierzeta")
+
+;; 3) Gaduła nie lubi hazardu.
+(marx 'build-constraint "gadula/hazard" != "gadula" "hazard")
+
+;; 4) Harfiarz lubi zwierzęta.
+(marx 'build-constraint "harfiarz==zwierzeta" == "harfiarz" "zwierzeta")
+
+;; 5) Groucho nie lubi zwierząt.
+(marx 'build-constraint "grucho!=zwierzeta" != "grucho" "zwierzeta")
+
+;; 6) Harpo nigdy nic nie mówi.
+(marx 'build-constraint "harpo!=gadula" != "harpo" "gadula")
+
+;; 7) Chico gra na pianinie.
+(marx 'build-constraint "chico==pianista" == "chico" "pianista")
+
+
+(display (marx 'run-csp #t)) (newline)

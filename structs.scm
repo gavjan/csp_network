@@ -1,7 +1,11 @@
 (import (except (rnrs) define-record-type) (srfi :9))
 
+
+(define (== left right)
+    (equal? left right)    
+)
 (define (!= left right)
-    (not (= left right))    
+    (not (== left right))
 )
 (define (and-list lst) (or (equal? lst '()) (and (car lst) (and-list (cdr lst)))))
 (define-record-type :constraint
