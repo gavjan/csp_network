@@ -7,15 +7,133 @@
     (define all_solutions? #f)
     (define solutions '())
     (define solved? #f)
+    (define agenda (make-agenda))
+    (define arcs (make-hashmap))
 
     (define (clean)
         (set! solutions '())
         (set! solved? #f)
     )
 
-    (define (optimize)
-        #t ;; TODO
+    (define (contradiction? l)
+        (and-list l)
     )
+    (define (init-optimize l)
+        (if (not (equal? l '()))
+            (let ()
+                (define c (car l))
+                (define inv
+                    (make-constraint
+                        (inv-cons-name (constraint-name c))
+                        (inv-comp (constraint-comp c))
+                        (constraint-right c)
+                        (constraint-left c)
+                    )
+                )
+                ;; c.left in cells and c.right in cells
+                (if
+                    (and
+                        (cells 'in? (constraint-left c))
+                        (cells 'in? (constraint-right c))
+                    )
+                    (begin
+                        (constraints 'put (constraint-name inv) inv)
+                        (agenda 'add (constraint-name c))
+                        (agenda 'add (constraint-name inv))
+                        (arcs 'put (constraint-right c) c)
+                        (arcs 'put (constraint-right inv) inv)
+                        (init-optimize (cdr l))                
+                    )
+                )
+            )
+        )
+    )
+    (define (right-optimize-loop cons left-val lst)
+        (if (equal? lst '())
+            #t
+            (let ()
+                (define right-val (car lst))
+
+                (if
+                    (evaluate
+                        (constraint-name cons)
+                        (constraint-comp cons)
+                        left-val
+                        right-val
+                    )
+                    #f
+                    (right-optimize-loop cons left-val (cdr lst))
+                )                
+            )
+        )
+    )
+    (define (left-optimize-loop cons left-cell right-cell l)
+        (if (not (equal? l '()))
+            (let ()
+                (define remove-left? #t)
+                (if
+                    (right-optimize-loop
+                        cons
+                        (car l)
+                        (cell-vals (cells 'get right-cell))
+                    )
+                    (let ()
+                        (define c (cells 'get left-cell))
+                        (define new-vals (del-list-val (car l) (cell-vals c)))
+                        (set-cell-vals! c new-vals)
+                        (cells 'put left-cell c)
+
+                        (agenda 'add
+                            (inv-cons-name
+                                (constraint-name cons)
+                            )
+                        )
+                    )
+                )
+                (left-optimize-loop cons left-cell right-cell (cdr l))
+            )
+        )
+    )
+
+    (define (optimize-loop)
+        (if (not (agenda 'empty?))
+            (let ()
+                (define cons (constraints 'get (agenda 'pop)))
+                (define left-cell (constraint-left cons))
+                (define right-cell (constraint-right cons))
+                (left-optimize-loop cons left-cell right-cell (cell-vals (cells 'get left-cell)))
+
+                
+                (optimize-loop)
+            )
+        )
+    )
+    (define (optimize)
+        (set! agenda (make-agenda))
+        (set! arcs (make-hashmap))
+
+
+        (init-optimize
+            (constraints 'map
+                (lambda (name c)
+                    c
+                )
+            )
+        )
+
+        (optimize-loop)
+
+        (contradiction?
+            (cells 'map
+                (lambda (name c)
+                    (not
+                        (equal? (cell-vals c) '())
+                    )
+                )
+            )
+        )
+    )
+
     (define (set-cell-val! name val)
         (define c (cells 'get name))
         (set-cell-curr! c val)
@@ -109,18 +227,15 @@
         )
 
     )
-    (define (evaluate c)
-        (define name (constraint-name c))
-        (define comp (constraint-comp c))
-        (define left (constraint-left c))
-        (define right (constraint-right c))
-
-        (if (cells 'in? left)
+    (define (evaluate name comp left right)     
+        (if (and (string? left) (cells 'in? left))
             (set! left (cell-curr (cells 'get left)))
         )
-        (if (cells 'in? right)
+        (if (and (string? right) (cells 'in? right))
             (set! right (cell-curr (cells 'get right)))
         )
+
+        
         (if 
             (or
                 (equal? left '())
@@ -134,7 +249,13 @@
     (define (assert-for-constraints l)   
         (if  (equal? l '())
             #t
-            (if (evaluate (car l))
+            (if
+                (evaluate
+                    (constraint-name (car l))
+                    (constraint-comp (car l))
+                    (constraint-left (car l))
+                    (constraint-right (car l))
+                )
                 (assert-for-constraints (cdr l))
                 #f
             )
@@ -185,7 +306,6 @@
                     )
                 )
             )
-
         )
     )
 
@@ -211,38 +331,52 @@
     )
     func
 )
+(define (test-marx)
+    (define marx (create-network))
+    (marx 'build-cell "pianista"    (list "grucho" "harpo" "chico"))
+    (marx 'build-cell "harfiarz"    (list "grucho" "harpo" "chico"))
+    (marx 'build-cell "gadula"      (list "grucho" "harpo" "chico"))
+    (marx 'build-cell "pieniadze"   (list "grucho" "harpo" "chico"))
+    (marx 'build-cell "hazard"      (list "grucho" "harpo" "chico"))
+    (marx 'build-cell "zwierzeta"   (list "grucho" "harpo" "chico"))
 
-(define marx (create-network))
-(marx 'build-cell "pianista"    (list "grucho" "harpo" "chico"))
-(marx 'build-cell "harfiarz"    (list "grucho" "harpo" "chico"))
-(marx 'build-cell "gadula"      (list "grucho" "harpo" "chico"))
-(marx 'build-cell "pieniadze"   (list "grucho" "harpo" "chico"))
-(marx 'build-cell "hazard"      (list "grucho" "harpo" "chico"))
-(marx 'build-cell "zwierzeta"   (list "grucho" "harpo" "chico"))
+    ;; 1) Pianista, harfiarz i gadula to różne osoby.
+    (marx 'build-constraint "pianista/harfiarz" != "pianista" "harfiarz")
+    (marx 'build-constraint "harfiarz/gadula" != "harfiarz" "gadula")
+    (marx 'build-constraint "pianista/gadula" != "pianista" "gadula")
 
-;; 1) Pianista, harfiarz i gadula to różne osoby.
-(marx 'build-constraint "pianista/harfiarz" != "pianista" "harfiarz")
-(marx 'build-constraint "harfiarz/gadula" != "harfiarz" "gadula")
-(marx 'build-constraint "pianista/gadula" != "pianista" "gadula")
+    ;; 2) Ten kto lubi pieniądze nie jest tym, kto lubi hazard, a ten z kolei nie lubi zwierząt
+    (marx 'build-constraint "pieniadze/hazard" != "pieniadze" "hazard")
+    (marx 'build-constraint "hazard/zwierzeta" != "hazard" "zwierzeta")
 
-;; 2) Ten kto lubi pieniądze nie jest tym, kto lubi hazard, a ten z kolei nie lubi zwierząt
-(marx 'build-constraint "pieniadze/hazard" != "pieniadze" "hazard")
-(marx 'build-constraint "hazard/zwierzeta" != "hazard" "zwierzeta")
+    ;; 3) Gaduła nie lubi hazardu.
+    (marx 'build-constraint "gadula/hazard" != "gadula" "hazard")
 
-;; 3) Gaduła nie lubi hazardu.
-(marx 'build-constraint "gadula/hazard" != "gadula" "hazard")
+    ;; 4) Harfiarz lubi zwierzęta.
+    (marx 'build-constraint "harfiarz==zwierzeta" == "harfiarz" "zwierzeta")
 
-;; 4) Harfiarz lubi zwierzęta.
-(marx 'build-constraint "harfiarz==zwierzeta" == "harfiarz" "zwierzeta")
+    ;; 5) Groucho nie lubi zwierząt.
+    (marx 'build-constraint "grucho!=zwierzeta" != "grucho" "zwierzeta")
 
-;; 5) Groucho nie lubi zwierząt.
-(marx 'build-constraint "grucho!=zwierzeta" != "grucho" "zwierzeta")
+    ;; 6) Harpo nigdy nic nie mówi.
+    (marx 'build-constraint "harpo!=gadula" != "harpo" "gadula")
 
-;; 6) Harpo nigdy nic nie mówi.
-(marx 'build-constraint "harpo!=gadula" != "harpo" "gadula")
-
-;; 7) Chico gra na pianinie.
-(marx 'build-constraint "chico==pianista" == "chico" "pianista")
+    ;; 7) Chico gra na pianinie.
+    (marx 'build-constraint "chico==pianista" == "chico" "pianista")
 
 
-(display (marx 'run-csp #t)) (newline)
+    (display (marx 'run-csp)) (newline)
+)
+
+(define (test-nums)
+    (define nums (create-network))
+    (nums 'build-cell "A" (list 1 2 3))
+    (nums 'build-cell "B" (list 1 2 3))
+    (nums 'build-cell "C" (list 1 2 3))
+
+    (nums 'build-constraint "A>B" > "A" "B")
+    (nums 'build-constraint "B=C" == "B" "C")
+    (display (nums 'run-csp #t)) (newline)
+)
+(test-nums)
+
