@@ -1,50 +1,54 @@
 (include "network.scm")
 
 (define (test-marx)
+    (define solutions '())
     (define marx (create-network))
-    (marx 'build-cell "pianista"    (list "grucho" "harpo" "chico"))
-    (marx 'build-cell "harfiarz"    (list "grucho" "harpo" "chico"))
-    (marx 'build-cell "gadula"      (list "grucho" "harpo" "chico"))
-    (marx 'build-cell "pieniadze"   (list "grucho" "harpo" "chico"))
-    (marx 'build-cell "hazard"      (list "grucho" "harpo" "chico"))
-    (marx 'build-cell "zwierzeta"   (list "grucho" "harpo" "chico"))
+
+    (build-cell "pianista"     marx (list "grucho" "harpo" "chico"))
+    (build-cell "harfiarz"     marx (list "grucho" "harpo" "chico"))
+    (build-cell "gadula"       marx (list "grucho" "harpo" "chico"))
+    (build-cell "pieniadze"    marx (list "grucho" "harpo" "chico"))
+    (build-cell "hazard"       marx (list "grucho" "harpo" "chico"))
+    (build-cell "zwierzeta"    marx (list "grucho" "harpo" "chico"))
 
     ;; 1) Pianista, harfiarz i gadula to różne osoby.
-    (marx 'build-constraint "pianista/harfiarz" != "pianista" "harfiarz")
-    (marx 'build-constraint "harfiarz/gadula" != "harfiarz" "gadula")
-    (marx 'build-constraint "pianista/gadula" != "pianista" "gadula")
+    (build-constraint "pianista/harfiarz" marx != "pianista" "harfiarz")
+    (build-constraint "harfiarz/gadula" marx != "harfiarz" "gadula")
+    (build-constraint "pianista/gadula" marx != "pianista" "gadula")
 
     ;; 2) Ten kto lubi pieniądze nie jest tym, kto lubi hazard, a ten z kolei nie lubi zwierząt
-    (marx 'build-constraint "pieniadze/hazard" != "pieniadze" "hazard")
-    (marx 'build-constraint "hazard/zwierzeta" != "hazard" "zwierzeta")
+    (build-constraint "pieniadze/hazard" marx != "pieniadze" "hazard")
+    (build-constraint "hazard/zwierzeta" marx != "hazard" "zwierzeta")
 
     ;; 3) Gaduła nie lubi hazardu.
-    (marx 'build-constraint "gadula/hazard" != "gadula" "hazard")
+    (build-constraint "gadula/hazard" marx != "gadula" "hazard")
 
     ;; 4) Harfiarz lubi zwierzęta.
-    (marx 'build-constraint "harfiarz==zwierzeta" == "harfiarz" "zwierzeta")
+    (build-constraint "harfiarz==zwierzeta" marx == "harfiarz" "zwierzeta")
 
     ;; 5) Groucho nie lubi zwierząt.
-    (marx 'build-constraint "grucho!=zwierzeta" != "grucho" "zwierzeta")
+    (build-constraint "grucho!=zwierzeta" marx != "grucho" "zwierzeta")
 
     ;; 6) Harpo nigdy nic nie mówi.
-    (marx 'build-constraint "harpo!=gadula" != "harpo" "gadula")
+    (build-constraint "harpo!=gadula" marx != "harpo" "gadula")
 
     ;; 7) Chico gra na pianinie.
-    (marx 'build-constraint "chico==pianista" == "chico" "pianista")
+    (build-constraint "chico==pianista" marx == "chico" "pianista")
 
-
-    (display (marx 'run-csp)) (newline)
+    (set! solutions (run-csp marx #t))
+    (display (car solutions)) (newline)
+    (display (cadr solutions)) (newline)
 )
 
 (define (test-nums)
     (define nums (create-network))
-    (nums 'build-cell "A" (list 1 2 3))
-    (nums 'build-cell "B" (list 1 2 3))
-    (nums 'build-cell "C" (list 1 2 3))
+    (build-cell "A" nums (list 1 2 3))
+    (build-cell "B" nums (list 1 2 3))
+    (build-cell "C" nums (list 1 2 3))
 
-    (nums 'build-constraint "A>B" > "A" "B")
-    (nums 'build-constraint "B=C" == "B" "C")
-    (display (nums 'run-csp #t)) (newline)
+    (build-constraint "A>B" nums > "A" "B")
+    (build-constraint "B=C" nums == "B" "C")
+    (display (run-csp nums)) (newline)
 )
+(test-marx)
 (test-nums)

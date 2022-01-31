@@ -13,11 +13,11 @@
 
     (define (add item)
         (if (not (set 'in? item))
-        	(begin
-        		(set 'put item #t)
-        		(q 'add item)
-    		)
-    	)
+            (begin
+                (set 'put item #t)
+                (q 'add item)
+            )
+        )
     )
 
     (define (pop)

@@ -32,7 +32,10 @@
     )
     
     (define (in? key)
-        (not (equal? #f (hashx-ref my-hash my-assoc mp key)))
+        (if (string? key)
+            (not (equal? #f (hashx-ref my-hash my-assoc mp key)))
+            #f
+        )   
     )
 
     (define* (func call key #:optional val)
