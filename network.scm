@@ -201,16 +201,16 @@
     )
 
     (define (build-constraint name comp left right)
-        (if
-            (or
-                (equal? comp >)
-                (equal? comp <)
-                (equal? comp ==)
-                (equal? comp !=)
-            )
+        ; (if
+        ;     (or
+        ;         (equal? comp >)
+        ;         (equal? comp <)
+        ;         (equal? comp ==)
+        ;         (equal? comp !=)
+        ;     )
             (constraints 'put name (make-constraint name comp left right func))
-            (error name "unrecognized comperator for constraint" comp)
-        )
+        ;     (error name "unrecognized comperator for constraint" comp)
+        ; )
     )
 
     (define (lookup-cell name)
@@ -274,16 +274,16 @@
     )
 
     (define (eval-expr name comp left right)
-        (if
-            (or
-                (equal? comp >)
-                (equal? comp <)
-                (equal? comp ==)
-                (equal? comp !=)
-            )
+        ; (if
+        ;     (or
+        ;         (equal? comp >)
+        ;         (equal? comp <)
+        ;         (equal? comp ==)
+        ;         (equal? comp !=)
+        ;     )
             (comp left right)
-            (error name "unrecognized comperator for constraint" comp)
-        )
+        ;     (error name "unrecognized comperator for constraint" comp)
+        ; )
 
     )
 
