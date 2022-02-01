@@ -19,7 +19,30 @@
     (define (contradiction? l)
         (and-list l)
     )
+    (define (optimize-one-val-loop cons a b l)
+        (if (not (equal? l '()))
+            (let ()
+                (define val (car l))
+                (if
+                    (not
+                        (eval-expr
+                            (constraint-name cons)
+                            (constraint-comp cons)
+                            val
+                            b
+                        )
+                    )
+                    (exclude a val)
 
+                )
+
+                (optimize-one-val-loop cons a b (cdr l))
+
+            )            
+            
+            
+        )
+    )
     (define (init-optimize l)
         (if (not (equal? l '()))
             (let ()
@@ -33,7 +56,6 @@
                         func
                     )
                 )
-                ;; c.left in cells and c.right in cells
                 (if
                     (and
                         (cells 'in? (constraint-left c))
@@ -43,9 +65,37 @@
                         (constraints 'put (constraint-name inv) inv)
                         (agenda 'add (constraint-name c))
                         (agenda 'add (constraint-name inv))
-                        (arcs 'put (constraint-right c) c)
-                        (arcs 'put (constraint-right inv) inv)
+                        (arcs 'append (constraint-right c) c)
+                        (arcs 'append (constraint-right inv) inv)
                         (init-optimize (cdr l))
+                    )
+                    (if
+                        (or
+                            (cells 'in? (constraint-left c))
+                            (cells 'in? (constraint-right c))
+                        )
+                        (let ()
+                            (define a
+                                (cells 'get
+                                    (if (cells 'in? (constraint-right c))
+                                        (constraint-right c)
+                                        (constraint-left c)
+                                    )
+                                )
+                            )
+                            (define b
+                                (if (cells 'in? (constraint-right c))
+                                    (constraint-left c)
+                                    (constraint-right c)
+                                )
+                            )
+                            (optimize-one-val-loop
+                                c
+                                a
+                                b
+                                (cell-vals a)
+                            )
+                        )
                     )
                 )
             )
@@ -88,11 +138,13 @@
                         (set-cell-vals! c new-vals)
                         (cells 'put left-cell c)
 
-                        (agenda 'add
-                            (inv-cons-name
-                                (constraint-name cons)
+                        (my-map
+                            (lambda (x)
+                                (agenda 'add (constraint-name x))
                             )
+                            (arcs 'get (constraint-right cons))
                         )
+
                     )
                 )
                 (left-optimize-loop cons left-cell right-cell (cdr l))

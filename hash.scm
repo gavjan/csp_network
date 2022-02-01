@@ -37,6 +37,15 @@
             #f
         )   
     )
+    (define (append key val)
+        (if (not (in? key))
+            (put key '())
+        )
+        (put
+            key
+            (cons val (get key))
+        )
+    )
 
     (define* (func call key #:optional val)
         (cond
@@ -45,6 +54,7 @@
             ((equal? call 'get) (get key))
             ((equal? call 'in?) (in? key))
             ((equal? call 'map) (map-func key))
+            ((equal? call 'append) (append key val))
         )
     )
     func

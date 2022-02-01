@@ -1,6 +1,14 @@
 (import (except (rnrs) define-record-type) (srfi :9))
 
-
+(define (my-map f l)
+    (if (null? l)
+        '()
+        (cons
+            (f (car l))
+            (my-map f (cdr l))
+        )
+    )
+)
 (define (len-1? l)
     (and
         (not (equal? l '()))
