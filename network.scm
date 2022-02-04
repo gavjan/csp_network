@@ -67,7 +67,6 @@
                         (agenda 'add (constraint-name inv))
                         (arcs 'append (constraint-right c) c)
                         (arcs 'append (constraint-right inv) inv)
-                        (init-optimize (cdr l))
                     )
                     (if
                         (or
@@ -98,6 +97,7 @@
                         )
                     )
                 )
+                (init-optimize (cdr l))
             )
         )
     )
